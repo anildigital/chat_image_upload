@@ -15,6 +15,8 @@ defmodule ChatWeb.Endpoint do
     gzip: false,
     only: ~w(css fonts images js favicon.ico robots.txt)
 
+  plug Plug.Static, at: "/uploads", from: Application.get_env(:chat, :uploads_directory)
+
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do

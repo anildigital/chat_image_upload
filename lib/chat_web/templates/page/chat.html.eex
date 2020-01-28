@@ -10,6 +10,11 @@ Chat
     <div class="col-xs-9">
       <input type="text" id="msg" class="form-control" placeholder="Your Message">
     </div>
+
+    <%= form_for @conn, "", [multipart: true, as: :upload], fn f -> %>
+      <%= file_input(f, :file) %>
+      <%= submit "Upload", id: "button" %>
+    <% end %>
   </div>
 
   <span>Users online</span>

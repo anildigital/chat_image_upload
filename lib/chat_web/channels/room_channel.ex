@@ -4,6 +4,7 @@ defmodule ChatWeb.RoomChannel do
   alias ChatWeb.Presence
   alias Chat.Repo
   alias Chat.Users.User
+  alias Chat.Documents
 
   def join("room:" <> room_id, payload, socket) do
     if authorized?(payload) do
@@ -20,11 +21,36 @@ defmodule ChatWeb.RoomChannel do
     {:reply, {:ok, payload}, socket}
   end
 
+  def handle_in("upload:file", params, socket) do
+    user = get_user(socket)
+
+    file_path = Documents.create_upload_from_plug_upload(user, params)
+
+    room_id = socket.assigns[:room_id]
+
+    payload = %{
+      name: params["name"],
+      message: file_path,
+      room_id: room_id,
+      user_id: user.id,
+      message_type: "file_upload"
+    }
+
+    message =
+      Chat.Messages.Message.changeset(%Chat.Messages.Message{}, payload) |> Chat.Repo.insert()
+
+    broadcast(socket, "room:#{room_id}:new_message", payload)
+
+    {:noreply, socket}
+  end
+
   # It is also common to receive messages from the client and
   # broadcast to everyone in the current topic (room:lobby).
   def handle_in("message:add", payload, socket) do
+    user = get_user(socket)
     room_id = socket.assigns[:room_id]
     payload = Map.put(payload, "room_id", room_id)
+    payload = Map.put(payload, "user_id", user.id)
     Chat.Messages.Message.changeset(%Chat.Messages.Message{}, payload) |> Chat.Repo.insert()
     broadcast(socket, "room:#{room_id}:new_message", payload)
     {:noreply, socket}
@@ -60,7 +86,8 @@ defmodule ChatWeb.RoomChannel do
     |> Enum.each(fn msg ->
       push(socket, "room:#{room_id}:new_message", %{
         name: msg.name,
-        message: msg.message
+        message: msg.message,
+        message_type: msg.message_type
       })
     end)
 

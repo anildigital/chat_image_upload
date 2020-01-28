@@ -10,6 +10,7 @@ defmodule Chat.Users.User do
     field :password_confirmation, :string, virtual: true
     field :password_hash, :string
     field :token, :string
+    has_many :messages, Chat.Messages.Message
 
     field(:email_verification_token, Ecto.UUID)
     field(:email_verified_at, :utc_datetime)

@@ -36,7 +36,13 @@ if (roomId) {
   channel.on(`room:${roomId}:new_message`, function (payload) { // listen to the 'shout' event
     let li = document.createElement("li"); // create new list item DOM element
     let name = payload.name || 'guest';    // get name from payload or set default
-    li.innerHTML = '<b>' + name + '</b>: ' + payload.message; // set li contents
+
+    if (payload.message_type === "file_upload") {
+      li.innerHTML = '<b>' + name + '</b>: ' +  '<img height="150" src="/uploads/' + payload.message + '"/>' // set li contents
+    }
+    else {
+      li.innerHTML = '<b>' + name + '</b>: ' + payload.message; // set li contents
+    }
     ul.appendChild(li);                    // append to list
   });
 
@@ -115,4 +121,31 @@ if (roomId) {
       msg.value = '';         // reset the message input field for next message.
     }
   });
+
+  let button = document.getElementById("button")
+  button.addEventListener("click", (e) => {
+    e.preventDefault()
+    onUpload(channel)
+  }, false)// below the init method
+
+  var onUpload = function(channel) {
+    let fileInput = document.getElementById("upload_file");
+    let file = fileInput.files[0]
+    let name = document.getElementById('name');
+
+    let reader = new FileReader()
+    reader.addEventListener("load", function(){
+      let payload = {binary: reader.result.split(",", 2)[1],
+                     filename: file.name,
+                     name: name.value}
+      channel.push("upload:file", payload)
+        .receive(
+          "ok", (reply) => {
+            console.log("got reply", reply)
+          }
+        )
+    }, false)
+    reader.readAsDataURL(file)
+    fileInput.value = null;
+  }
 }
